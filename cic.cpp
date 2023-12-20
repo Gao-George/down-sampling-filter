@@ -1,51 +1,56 @@
-#include <vector>
+#include "cic.h"
+#include <cstring>
 using namespace std;
 
-vector<double> integration(vector<double> s, int level) {
-	int length = s.size();
-	vector<double> buffer;
-	for (int l = 0; l < level; l++) {
-		buffer.push_back(s[0]);
-		for (int i = 1; i < length; i++) {
-			buffer.push_back(buffer[i - 1] + s[i]);
-		}
-		s.clear();
-		buffer.swap(s);
-	}
-	return s;
+CIC::CIC(int Order, int DownRate) {
+	order = Order;
+	downRate = DownRate;
+
+	delayI = new double[Order];
+	currentI = new double[Order];
+	memset(delayI, 0, Order * sizeof(double));
+
+	delayC = new double[Order];
+	currentC = new double[Order];
+	memset(delayC, 0, Order * sizeof(double));
+
+	counter = 0;
 }
 
-vector<double> comb(vector<double> s, int level) {
-	vector<double> buffer;
-	int length = s.size();
-	for (int l = 0; l < level; l++) {
-		buffer.push_back(0);
-		for (int i = 1; i < length; i++) {
-			buffer.push_back(s[i] - s[i - 1]);
-		}
-		s.clear();
-		buffer.swap(s);
-	}
-	return s;
+CIC::~CIC() {
+	delete[] delayI;
+	delete[] delayC;
+	delete[] currentI;
+	delete[] currentC;
 }
 
-vector<double> downSample(vector<double> s, int rate) {
-	vector<double> ans;
-	for (int i = 0; i < s.size(); i++) {
-		if (i % rate == 0) {
-			ans.push_back(s[i]);
-		}
+double CIC::integral(double signal) {
+	currentI[0] = signal;
+	for (int i = 1; i < order; i++) {
+		currentI[i] = currentI[i - 1] + delayI[i];
 	}
-	return ans;
+	memcpy(delayI, currentI, order * sizeof(double));
+	return currentI[order - 1];
 }
 
-vector<double> upSample(vector<double> s, int rate) {
-	vector<double> ans;
-	for (double& n : s) {
-		ans.push_back(n);
-		for (int i = 0; i < rate - 1; i++) {
-			ans.push_back(0);
-		}
+double CIC::comb(double signal) {
+	currentC[0] = signal;
+	for (int i = 1; i < order; i++) {
+		currentC[i] = currentC[i - 1] - delayC[i - 1];
 	}
-	return ans;
+	memcpy(delayC, currentC, order * sizeof(double));
+	return currentC[order - 1];
+}
+
+void CIC::reset() {
+	memset(delayI, 0, order * sizeof(double));
+	memset(delayC, 0, order * sizeof(double));
+}
+
+bool CIC::downCounter() {
+	if (++counter == downRate) {
+		counter = 0;
+		return true;
+	}
+	return false;
 }

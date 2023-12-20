@@ -1,13 +1,25 @@
 #pragma once
-#ifndef CIC
-#define CIC
+#ifndef CICfilter
+#define CICfilter
 
-#include <vector>
-using namespace std;
+class CIC {
+private:
+	int order;
+	int counter;
+	int downRate;
+	double* delayI, * currentI;
+	double* delayC, * currentC;
 
-vector<double> integration(vector<double> s, int level);
-vector<double> comb(vector<double> s, int level);
-vector<double> downSample(vector<double> s, int rate);
-vector<double> upSample(vector<double> s, int rate);
+public:
+	CIC(int Order, int DownRate);
+	~CIC();
+
+	double integral(double signal);
+	double comb(double signal);
+
+	void reset();
+
+	bool downCounter();
+};
 
 #endif
